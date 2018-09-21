@@ -1,0 +1,113 @@
+<div class="time">
+  <span contenteditable>30</span>
+</div>
+<div class="status">
+  <i class="unpaused"></i>
+</div>
+
+<style>
+body {
+  height: 100vh;
+  margin: 0;
+  font-family: Sans-Serif;
+  color: #ffffff;
+  background-color: #9C27B0;
+}
+
+.time {
+  padding-top: 30vmin;
+  text-align: center;
+  border: none;
+  height: 40vmin;
+}
+
+.time [contenteditable] {
+  font-size: 40vmin;
+}
+
+.time span::before {
+  display: inline-block;
+  content: "+";
+  width: 0px;
+  visibility: hidden;
+}
+
+.time span::after {
+  content: "sec";
+  margin-left: .2em;
+  font-size: 10vmin;
+}
+
+.status {
+  text-align: center;
+  font-size: 3vh;
+}
+
+.paused::before {
+  content: "||";
+}
+</style>
+
+<script>
+const secondsSpan = document.querySelector("[contenteditable]")
+const pauseI = document.querySelector(".unpaused")
+let remaining = 30
+let paused = false
+
+secondsSpan.addEventListener("focus", () => emit({
+  type: "SECONDS_TEXT_FOCUSED"
+}))
+
+secondsSpan.addEventListener("blur", () => emit({
+  type: "SECONDS_TEXT_BLURRED"
+}))
+
+secondsSpan.addEventListener("keydown", event =>
+  event.keyCode === 13 && secondsSpan.blur())
+
+setInterval(() => emit({
+  type: "TICK"
+}), 1000)
+
+function emit(event) {
+  setTimeout(() => {
+    console.log(event)
+    switch (event.type) {
+      case "SECONDS_TEXT_FOCUSED":
+        emit({
+          type: "PAUSED"
+        })
+        break
+      case "SECONDS_TEXT_BLURRED":
+        remaining = parseInt(secondsSpan.innerText)
+        emit({
+          type: "REMAINING_TIME_CHANGED"
+        })
+        if (!isNaN(remaining))
+          emit({
+            type: "UNPAUSED"
+          })
+        break
+      case "TICK":
+        if (!paused && remaining > 0) {
+          --remaining
+          emit({
+            type: "REMAINING_TIME_CHANGED"
+          })
+        }
+        break
+      case "REMAINING_TIME_CHANGED":
+        secondsSpan.innerText = isNaN(remaining) ? "" : remaining
+        break
+      case "PAUSED":
+        paused = true
+        pauseI.className = "paused"
+        break
+      case "UNPAUSED":
+        paused = false
+        pauseI.className = "unpaused"
+        break
+    }
+  })
+}
+</script>
